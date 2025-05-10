@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="backend">
+    <output-path>$PROJECT_DIR$/out/</output-path>
+    <root id="archive" name="backend.jar">
+      <element id="module-output" name="DockLib" />
+      <element id="library" level="project" name="Maven: jakarta.ws.rs:jakarta.ws.rs-api:2.1.6" />
+    </root>
+  </artifact>
+</component>
