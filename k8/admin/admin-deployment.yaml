@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-deployment
+  namespace: library-app
+  labels:
+    app: admin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: admin
+  template:
+    metadata:
+      labels:
+        app: admin
+    spec:
+      containers:
+        - name: admin-service
+          image: admin-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: admin-config
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: admin-config
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: admin-config
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: admin-secret
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: admin-secret
+                  key: DB_PASSWORD
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Dsun.net.spi.nameservice.provider.1=dns,sun"
+
+
+
+

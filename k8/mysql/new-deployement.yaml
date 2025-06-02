@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-deployment
+  namespace: library-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      securityContext:
+        fsGroup: 999  # Ensures correct group ownership of /var/lib/mysql (GID of mysql user)
+      volumes:
+        - name: mysql-persistent-storage
+          emptyDir: { }  # Ephemeral volume: resets every pod restart
+        - name: init-script
+          emptyDir: { }  # Shared between copy and mysql container
+        - name: init-script-config
+          configMap:
+            name: init-script-config  # Contains your init.sql
+      initContainers:
+        - name: copy-init-script
+          image: busybox
+          command: [ "sh", "-c", "cp /config/dbinit.sql /init/init.sql" ]
+          volumeMounts:
+            - name: init-script-config
+              mountPath: /config
+            - name: init-script
+              mountPath: /init
+      containers:
+        - name: mysql
+          image: mysql:5.7
+          command: [ "/bin/sh", "-c" ]
+          args:
+            - |
+              echo "Wiping manually before MySQL starts";
+              rm -rf /var/lib/mysql/* /var/lib/mysql/.[!.]* /var/lib/mysql/..?*;
+              exec /usr/local/bin/docker-entrypoint.sh mysqld
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: mysql-password
+            - name: MYSQL_DATABASE
+              value: library_db
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: mysql-username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: mysql-password
+          volumeMounts:
+            - name: mysql-persistent-storage
+              mountPath: /var/lib/mysql
+            - name: init-script
+              mountPath: /docker-entrypoint-initdb.d
+          ports:
+            - containerPort: 3306
